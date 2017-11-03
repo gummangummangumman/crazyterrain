@@ -21,6 +21,8 @@ var worldMapMaxHeight = 1000;
 
 var clock = new THREE.Clock();
 
+var animate_objects = [];
+
 window.onload = function () {
     "use strict";
     init();
@@ -85,6 +87,8 @@ function init() {
     setupInstancedRocks(terrainMesh, objectMaterialLoader);
 
     setupTrees(terrainMesh, objectMaterialLoader);
+
+    setupMonkeys(terrainMesh, objectMaterialLoader);
 
     //
     // Generate random positions for some number of boxes
@@ -156,6 +160,10 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Perform state updates here
+    for (var i=0;i<animate_objects.length;i++) {
+        animate_objects[i].animate();
+    }
+
 
     // Call render
     render();
@@ -164,8 +172,12 @@ function animate() {
 
 function render() {
     "use strict";
+
+
+
     controls.update(clock.getDelta());
     renderer.clear();
+
     //renderer.render(scene, camera);
     composer.render();
 }
@@ -256,7 +268,7 @@ function setupTerrain() {
         },
 
         vertexShader: THREE.ShaderLib['basic'].vertexShader,
-        fragmentShader: document.getElementById('terrain-fshader').textContent,
+        fragmentShader: document.getElementById('terrain-fshader').textContent
 
     });
 
@@ -320,7 +332,7 @@ function setupInstancedRocks(terrain, objectMaterialLoader) {
         ),
 
         vertexShader: document.getElementById("instanced-vshader").textContent,
-        fragmentShader: THREE.ShaderLib['basic'].fragmentShader,
+        fragmentShader: THREE.ShaderLib['basic'].fragmentShader
 
         //lights: true
     });
@@ -395,8 +407,8 @@ function setupTrees(terrain, objectMaterialLoader) {
     var spreadRadius = 0.1*worldMapWidth;
     //var geometryScale = 30;
 
-    var minHeight = 0.05*worldMapMaxHeight;
-    var maxHeight = 0.3*worldMapMaxHeight;
+    var minHeight = 0.02 * worldMapMaxHeight;
+    var maxHeight = 0.7 * worldMapMaxHeight;
     var maxAngle = 30 * Math.PI / 180;
 
     var scaleMean = 100;
@@ -436,7 +448,6 @@ function setupTrees(terrain, objectMaterialLoader) {
             // Custom function to handle what's supposed to happen once we've loaded the model
 
             var bbox = new THREE.Box3().setFromObject(loadedObject);
-            console.log(bbox);
 
             for (var i = 0; i < numObjects; ++i) {
                 var object = loadedObject.clone();
@@ -452,6 +463,76 @@ function setupTrees(terrain, objectMaterialLoader) {
                 );
 
                 object.name = "LowPolyTree";
+
+                terrain.add(object);
+            }
+        }, onProgress, onError);
+}
+
+
+function setupMonkeys(terrain, objectMaterialLoader)
+{
+    "use strict";
+
+    var maxNumObjects = 200;
+    var spreadCenter = new THREE.Vector3(-0.2*worldMapWidth, 0, -0.2*worldMapDepth);
+    var spreadRadius = 0.1*worldMapWidth;
+    //var geometryScale = 30;
+
+    var minHeight = 0.02 * worldMapMaxHeight;
+    var maxHeight = 0.7 * worldMapMaxHeight;
+    var maxAngle = 30 * Math.PI / 180;
+
+    var scaleMean = 100;
+    var scaleSpread = 80;
+    var scaleMinimum = 10;
+
+    var generatedAndValidPositions = generateRandomData(maxNumObjects,
+        generateGaussPositionAndCorrectHeight.bind(null, terrain, spreadCenter, spreadRadius),
+        positionValidator.bind(null, terrain, minHeight, maxHeight, maxAngle),
+        5
+    );
+
+    var generatedAndValidScales = generateRandomData(generatedAndValidPositions.length,
+        function() { return Math.abs(scaleMean + randomGauss()*scaleSpread); },
+        function(scale) { return scale > scaleMinimum; }
+    );
+
+    objectMaterialLoader.load(
+        'models/monkey/monkey.obj',
+        'models/lowPolyTree/lowpolytree.mtl',
+        function (loadedObject) {
+            "use strict";
+            // Custom function to handle what's supposed to happen once we've loaded the model
+
+            var bbox = new THREE.Box3().setFromObject(loadedObject);
+
+            for (var i = 0; i < maxNumObjects; ++i) {
+                var object = loadedObject.clone();
+
+                // We should know where the bottom of our object is
+                object.position.copy(generatedAndValidPositions[i]);
+                object.position.y -= bbox.min.y*generatedAndValidScales[i];
+
+                object.rotation.y += Math.random() * Math.PI;
+
+                object.scale.set(
+                    generatedAndValidScales[i],
+                    generatedAndValidScales[i],
+                    generatedAndValidScales[i]
+                );
+
+                var rotationSpeed = (Math.random() * 0.2) - 0.1;
+                console.log(rotationSpeed);
+
+                object.animate = function(){
+                    this.rotation.y += rotationSpeed;
+                };
+
+
+                object.name = "Monkey";
+
+                animate_objects.push(object);
 
                 terrain.add(object);
             }
