@@ -90,6 +90,8 @@ function init() {
 
     setupMonkeys(terrainMesh, objectMaterialLoader);
 
+    makeFog();
+
     //
     // Generate random positions for some number of boxes
     // Used in instancing. Better examples:
@@ -159,6 +161,8 @@ function animate() {
     "use strict";
     requestAnimationFrame(animate);
 
+
+
     // Perform state updates here
     for (var i=0;i<animate_objects.length;i++) {
         animate_objects[i].animate();
@@ -180,6 +184,15 @@ function render() {
 
     //renderer.render(scene, camera);
     composer.render();
+}
+
+function makeFog()
+{
+    "use strict";
+
+    var fog = new THREE.Fog("#ff00ff", 3000, 3500);
+    fog.name = "pink fog";
+    scene.fog = fog;
 }
 
 function setupTerrain() {
@@ -523,7 +536,6 @@ function setupMonkeys(terrain, objectMaterialLoader)
                 );
 
                 var rotationSpeed = (Math.random() * 0.2) - 0.1;
-                console.log(rotationSpeed);
 
                 object.animate = function(){
                     this.rotation.y += rotationSpeed;
