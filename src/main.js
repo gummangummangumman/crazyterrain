@@ -60,6 +60,40 @@ function init() {
 
     scene.add(new THREE.DirectionalLightHelper(directionalLight, 10));
 
+
+    //Billboard for gress
+    var canvasGrass = document.createElement('canvas');
+    var contextGrass = canvasGrass.getContext('2d');
+    //var texture1 = new THREE.Texture(canvas1);
+    var textureGrass = THREE.ImageUtils.loadTexture( 'models/grass/grass.png', {}, function(){ renderer.render(scene, camera); } );
+    //last bildet
+    var imageObj = new Image();
+    imageObj.src = "models/grass/grass.png";
+    imageObj.onload = function()
+    {
+        contextGrass.drawImage(imageObj, 0, 0);
+        if ( textureGrass )
+            textureGrass.needsUpdate = true;
+    }
+
+    var material1 = new THREE.MeshBasicMaterial( {map:textureGrass, side:THREE.DoubleSide} );
+    material1.transparent = true;
+
+    var mesh1 = new THREE.Mesh(
+        new THREE.PlaneGeometry(canvasGrass.width, canvasGrass.height),
+        material1
+    );
+    mesh1.position.set(50,1000,50);
+
+    //TODO rotere bare sidelengs
+    mesh1.animate = function(){
+        this.lookAt(camera.position);
+    };
+    animate_objects.push(mesh1);
+    scene.add(mesh1);
+
+
+
     //
     // Height map generation/extraction
     //
